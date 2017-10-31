@@ -1,0 +1,113 @@
+<?php
+
+namespace Drupal\slider\Form;
+
+use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
+
+class SliderSettingsForm extends FormBase {
+  
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEditableConfigNames() {
+    return ['slider.settings'];
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getFormId() {
+    return 'slider_settings';
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function buildForm(array $form, FormStateInterface $form_state) {
+    $i = 0;
+    $name_field = $form_state->get('num_names');
+    $form['#tree'] = TRUE;
+    $form['names_fieldset'] = [
+      '#type' => 'fieldset',
+      '#prefix' => '<div id="names-fieldset-wrapper">',
+      '#suffix' => '</div>',
+    ];
+    if (empty($name_field)) {
+      $name_field = $form_state->set('num_names', 1);
+    }
+     $names_list = $this->config('slider.settings')->get('names_list');
+    if (!empty($names_list)) {
+      foreach ($names_list as $key => $name) {
+        $form['names_fieldset']['existed_names'][$key] = [
+          '#type' => 'textfield',
+          '#title' => 'Name',
+          '#default_value' => $name,
+        ];
+      }
+    }
+
+    for ($i = 0; $i < $name_field; $i++) {
+      $form['names_fieldset']['name'][$i] = [
+        '#type' => 'textfield',
+        '#title' => t('Name'), 
+      ];
+    }
+    $form['actions'] = [
+      '#type' => 'actions',
+    ];
+    $form['names_fieldset']['actions']['add_name'] = [
+      '#type' => 'submit',
+      '#value' => t('Add one more'),
+      '#submit' => array('::addOne'),
+      '#ajax' => [
+        'callback' => '::addmoreCallback',
+        'wrapper' => 'names-fieldset-wrapper',
+      ],
+    ];
+
+    $form_state->setCached(FALSE);
+    $form['actions']['submit'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Save Configuration'),
+    ];
+
+    return $form;
+  }
+  
+  public function addOne(array &$form, FormStateInterface $form_state) {
+    $name_field = $form_state->get('num_names');
+    $add_button = $name_field + 1;
+    $form_state->set('num_names', $add_button);
+    $form_state->setRebuild();
+  }
+
+  public function addmoreCallback(array &$form, FormStateInterface $form_state) {
+    $name_field = $form_state->get('num_names');
+    return $form['names_fieldset'];
+  }
+
+
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $new_names = array_filter($form_state->getValue(array('names_fieldset', 'name')));
+    $added_names = array_filter($form_state->getValue(array('names_fieldset', 'existed_names')));
+    if (empty($added_names)) {
+      $added_names = array();
+    }
+    $names_list = array_merge($added_names, $new_names);
+    \Drupal::configFactory()->getEditable('slider.settings')
+      // Set the submitted configuration setting
+      ->set('names_list', $names_list)
+      ->save();
+    
+    $values = $form_state->getValue(array('names_fieldset', 'name'));
+
+    drupal_set_message('Successfully updated the list.');
+  }
+}
+
