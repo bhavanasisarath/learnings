@@ -1,0 +1,24 @@
+Printing Values of a Parent Node from a Drupal Paragraphs Field
+
+First Approach (in paragraph tempalte file)
+--------------------------------------------
+{% set parent = paragraph._referringItem.parent.parent.entity %}
+<ul>
+  <li>Node Id: {{ parent.nid.value }}</li>
+  <li>Node Title: {{ parent.title.value }}</li>
+  <li>Link to node: <a href="/node/{{ parent.nid.value }}">{{ parent.title.value }}</a></li>
+</ul>
+
+
+
+Second Approach(your .theme file)
+----------------------------------------
+
+function theme_preprocess_paragraph(&$variables){
+   $node = \Drupal::request()->attributes->get('node');
+   $variables['nodetitle'] = $node->getTitle();
+}
+
+
+print {{ nodetitle }} in your paragraph template file
+
