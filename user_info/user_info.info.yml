@@ -1,0 +1,6 @@
+name: User Info
+type: module
+description: To show current Logged in user info
+core: 8.x
+package: Custom
+version: 8.x-1.0
